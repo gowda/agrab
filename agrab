@@ -1,0 +1,61 @@
+#!/bin/bash
+
+function run_tee
+{
+    if [ -z "$device" ]; then
+	echo "please specify a android device to attach to";
+	exit;
+    fi
+
+    echo "starting android frame-buffer tee for $device";
+    ./afrab-tee -s $device;
+}
+
+function run_encoder
+{
+    if [ -z "$output" ]; then
+	output="agrab-$device.mp4";
+	echo "no output file specified, using default - $output"
+    fi
+
+    ./afrab-enc -o $output -s $device $LIVE;
+}
+
+function main
+{
+    run_tee &
+    run_encoder;
+}
+
+function parse_cmdline
+{
+    args=`getopt o:s:L $*`;
+
+    if [ $? != 0 ]; then
+	echo 'Usage: ...'
+	exit 2
+    fi
+
+    set -- $args
+
+    for i; do
+	case "$i" in
+	    -s)
+		device=$2;
+		shift;
+		shift;;
+	    -o)
+		output=$2;
+		shift;
+		shift;;
+	    -L)
+		LIVE="-L";
+		shift;;
+	    --)
+		shift;
+		break;;
+	esac
+    done
+}
+
+parse_cmdline "$@" && main;

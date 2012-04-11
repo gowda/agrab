@@ -1,0 +1,2 @@
+# on Mac OS X, ignore the Desktop Service Store information file
+.DS_Store

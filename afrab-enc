@@ -1,0 +1,68 @@
+#!/bin/bash
+
+function init
+{
+    pipe=/tmp/android-display-trans-port-$device.pipe
+
+    sleep 2;
+
+    echo "$0: reading from device pipe - $pipe"
+
+    if [[ ! -p $pipe ]]; then
+	echo "display transporter not running"
+	exit 1;
+    fi
+
+    rm -f ${output};
+}
+
+function main
+{
+    if [ -z "$LIVE" ]; then
+	ffmpeg -r 30 -vcodec rawvideo -f rawvideo \
+	    -pix_fmt rgb565 -s 480x800 -i $pipe \
+	    -vcodec mpeg4 -re $output
+    else
+	output="rtmp://localhost/live/android-$device"
+
+	echo "streaming live at - $output"
+
+	ffmpeg -r 30 -vcodec rawvideo -f rawvideo \
+	    -pix_fmt rgb565 -s 480x800 -i $pipe \
+	    -vcodec mpeg4 -re $output
+    fi
+}
+
+function parse_cmdline
+{
+    args=`getopt o:s:L $*`;
+
+    if [ $? != 0 ]; then
+	echo 'Usage: ...'
+	exit 2
+    fi
+
+    set -- $args
+
+    for i; do
+	case "$i" in
+	    -s)
+		device=$2;
+		shift;
+		shift;;
+	    -o)
+		output=$2;
+		shift;
+		shift;;
+	    -L)
+		LIVE="-L";
+		echo "streaming live through rtmp";
+		shift;;
+	    --)
+		shift;
+		break;;
+	esac
+    done
+}
+
+parse_cmdline "$@" && init && main

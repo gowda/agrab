@@ -1,0 +1,6 @@
+* Run 'agrab' application to get the grab of frame-buffer
+
+$ ./agrab -s <device-to-connect-to> -o <output-file-path>
+
+<device-to-connect-to> - should be the same device which is used to connect adb
+                         with a device

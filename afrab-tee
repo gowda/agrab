@@ -1,0 +1,54 @@
+#!/bin/bash
+
+#
+# afrab-tee - Android FRAme Buffer TEE
+#
+# copy android's frame-buffer into a named pipe - @pipe
+#
+
+function init
+{
+    pipe=/tmp/android-display-trans-port-$device.pipe
+
+    ADB=/Users/gowda/projects/android-sdk-macosx/platform-tools/adb
+
+    trap "rm -f $pipe" EXIT
+
+    if [[ ! -p $pipe ]]; then
+	mkfifo $pipe
+    fi
+}
+
+function main
+{
+    while true; do
+	${ADB} -s $device pull /dev/graphics/fb0 /dev/stdout \
+	    1>>$pipe 2>/dev/null
+    done
+}
+
+function parse_cmdline
+{
+    args=`getopt s: $*`;
+
+    if [ $? != 0 ]; then
+	echo 'Usage: ...'
+	exit 2
+    fi
+
+    set -- $args
+
+    for i; do
+	case "$i" in
+	    -s)
+		device=$2;
+		shift;
+		shift;;
+	    --)
+		shift;
+		break;;
+	esac
+    done
+}
+
+parse_cmdline "$@" && init && main
