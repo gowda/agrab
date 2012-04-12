@@ -87,6 +87,13 @@ function parse_cmdline
 		shift;;
             -A|--android-sdk)
                 ASDK_PATH="$2";
+
+		# check if ASDK_PATH actually contains android-sdk
+		if [ ! -x ${ASDK_PATH}/platform-tools/adb ]; then
+		    echo "$ASDK_PATH does not point to a valid android SDK";
+		    exit 2;
+		fi
+
                 shift;
                 shift;;
 	    --)
