@@ -58,7 +58,15 @@ function usage
 
 function parse_cmdline
 {
-    args=`getopt -u -o ho:s:LA: --long help,output:,serial:,live,android-sdk: -- "$@"`;
+    if [ `uname` == "Darwin" ]; then
+	args=`getopt ho:s:LA: $@`
+    elif [ `uname` == "Linux" ]; then
+	args=`getopt -u -o ho:s:LA: \
+	    --long help,output:,serial:,live,android-sdk: -- "$@"`;
+    else
+	echo "You need a GNU/Linux or Mac OS X to run $0";
+	exit 0;
+    fi
 
     if [ $? != 0 ]; then
         usage

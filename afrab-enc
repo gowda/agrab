@@ -63,7 +63,14 @@ function usage
 
 function parse_cmdline
 {
-    args=`getopt -u -o ho:s:L --long help,output:,serial:,live -- "$@"`;
+    if [ `uname` == "Darwin" ]; then
+	args=`getopt ho:s:L $@`;
+    elif [ `uname` == "Linux" ]; then
+	args=`getopt -u -o ho:s:L --long help,output:,serial:,live -- "$@"`;
+    else
+	echo "You need a GNU/Linux or Mac OS X to run $0";
+	exit 0;
+    fi
 
     if [ $? != 0 ]; then
         usage
