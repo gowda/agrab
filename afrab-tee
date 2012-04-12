@@ -28,7 +28,11 @@ function init
 {
     pipe=/tmp/android-display-trans-port-$device.pipe
 
-    ADB=/Users/gowda/projects/android-sdk-macosx/platform-tools/adb
+    if [ -z "${ASDK_PATH}" ]; then
+        ADB="adb"
+    else
+        ADB=${ASDK_PATH}/platform-tools/adb
+    fi
 
     trap "rm -f $pipe" EXIT
 
@@ -45,12 +49,21 @@ function main
     done
 }
 
+function usage
+{
+    echo "Usage: $0 [options]"
+    echo
+    echo "Options:"
+    echo " -s, --serial=SERIAL-OF-ANDROID      serial identifier for emulator"
+    echo " -A, --android-sdk=ANDROID-SDK-PATH  android sdk to use"
+}
+
 function parse_cmdline
 {
-    args=`getopt s: $*`;
+    args=`getopt -u -o hs:A: --long help,serial:,android-sdk: -- "$@"`;
 
     if [ $? != 0 ]; then
-	echo 'Usage: ...'
+        usage
 	exit 2
     fi
 
@@ -58,10 +71,17 @@ function parse_cmdline
 
     for i; do
 	case "$i" in
-	    -s)
+            -h|--help)
+                usage;
+                exit 0;;
+	    -s|--serial)
 		device=$2;
 		shift;
 		shift;;
+            -A|--android-sdk)
+                ASDK_PATH="$2";
+                shift;
+                shift;;
 	    --)
 		shift;
 		break;;

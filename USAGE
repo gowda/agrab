@@ -1,6 +1,29 @@
-* Run 'agrab' application to get the grab of frame-buffer
+* Detailed command-line options
 
-$ ./agrab -s <device-to-connect-to> -o <output-file-path>
+  -A <android-sdk-path>
+  --android-sdk <android-sdk-path>
 
-<device-to-connect-to> - should be the same device which is used to connect adb
-                         with a device
+  specify path to android sdk, if not specified agrab looks for environmental
+  variable ANDROID_SDK to look for path to android sdk. finally, falls down to
+  search through the PATH variable.
+
+  -s <android-emulator-serial>
+  --serial <android-emulator-serial>
+
+  specify the serial to identify a running android-emulator. if not specified,
+  assumes that there is a default adb connection established.
+
+  -o <output-file-path>
+  --output <output-file-path>
+
+  specify the output file path. the extension of output file determines the
+  media container format, if extension is absent 'mp4' format is used.
+
+  NOTE: currently, there is no option to set the encoder to be used, it is
+        hard-coded to mpeg4
+
+  -L
+  --live
+
+  turn on live streaming through rtmp, requires ffmpeg to be built with
+  librtmp support

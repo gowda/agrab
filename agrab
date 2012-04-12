@@ -26,7 +26,7 @@ function run_tee
     fi
 
     echo "starting android frame-buffer tee for $device";
-    ./afrab-tee -s $device;
+    ./afrab-tee -A ${ASDK_PATH} -s $device;
 }
 
 function run_encoder
@@ -45,12 +45,23 @@ function main
     run_encoder;
 }
 
+function usage
+{
+    echo "Usage: $0 [options]"
+    echo
+    echo "Options:"
+    echo " -o, --output=OUTPUT-PATH"
+    echo " -s, --serial=SERIAL-OF-ANDROID"
+    echo " -L, --live"
+    echo " -A, --android-sdk=ANDROID-SDK-PATH"
+}
+
 function parse_cmdline
 {
-    args=`getopt o:s:L $*`;
+    args=`getopt -u -o ho:s:LA: --long help,output:,serial:,live,android-sdk: -- "$@"`;
 
     if [ $? != 0 ]; then
-	echo 'Usage: ...'
+        usage
 	exit 2
     fi
 
@@ -58,17 +69,25 @@ function parse_cmdline
 
     for i; do
 	case "$i" in
-	    -s)
-		device=$2;
+            -h|--help)
+                usage;
+                exit 0;;
+	    -s|--serial)
+		device="$2";
+                echo "serial device is $device";
 		shift;
 		shift;;
-	    -o)
+	    -o|--output)
 		output=$2;
 		shift;
 		shift;;
-	    -L)
+	    -L|--live)
 		LIVE="-L";
 		shift;;
+            -A|--android-sdk)
+                ASDK_PATH="$2";
+                shift;
+                shift;;
 	    --)
 		shift;
 		break;;
