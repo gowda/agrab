@@ -21,19 +21,17 @@
 function init
 {
     if [ -z "$input" ]; then
-        echo
-        echo "$0: no input file to read from"
-        echo
+        error "no input file to read from"
 
         usage
 
         exit 2;
     fi
 
-    echo "$0: reading from input - $input"
+    debug "reading from input - $input"
 
     if [[ ! -p $input ]]; then
-	echo "$0: input file is missing, check if afrab-tee is running"
+	error "input file is missing, check if afrab-tee is running"
 	exit 1;
     fi
 
@@ -49,7 +47,7 @@ function main
     else
 	output="rtmp://localhost/live/android-$device"
 
-	echo "streaming live at - $output"
+	debug "streaming live at - $output"
 
 	ffmpeg -v 0 -r 30 -vcodec rawvideo -f rawvideo \
 	    -pix_fmt rgb565 -s 480x800 -i $input \
@@ -70,12 +68,12 @@ function usage
 function parse_cmdline
 {
     if [ `uname` == "Darwin" ]; then
-	args=`getopt ho:s:Li: $@`;
+	args=`getopt hdo:s:Li: $@`;
     elif [ `uname` == "Linux" ]; then
-	args=`getopt -u -o ho:s:Li: \
-            --long help,output:,serial:,live,input: -- "$@"`;
+	args=`getopt -u -o hdo:s:Li: \
+            --long help,debug,output:,serial:,live,input: -- "$@"`;
     else
-	echo "You need a GNU/Linux or Mac OS X to run $0";
+	error "You need a GNU/Linux or Mac OS X to run $0";
 	exit 0;
     fi
 
@@ -91,6 +89,9 @@ function parse_cmdline
             -h|--help)
                 usage;
                 exit 0;;
+            -d|--debug)
+                AGRAB_DEBUG="true";
+                shift;;
 	    -s|--serial)
 		device="$2";
 		shift;
@@ -105,7 +106,7 @@ function parse_cmdline
                 shift;;
 	    -L|--live)
 		LIVE="-L";
-		echo "streaming live through rtmp";
+		debug "streaming live through rtmp";
 		shift;;
 	    --)
 		shift;

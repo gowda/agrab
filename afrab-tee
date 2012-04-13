@@ -28,9 +28,7 @@ function init
 {
 
     if [ -z "$pipe" ]; then
-        echo
-        echo "$0: output file (FIFO) not specified, $0 refuses to continue"
-        echo
+        error "output file (FIFO) not specified, $0 refuses to continue"
 
         usage
 
@@ -61,9 +59,7 @@ function main
 	    1>>$pipe
 
         if [ $? != 0 ]; then
-            echo
-            echo "$0: exiting.."
-            echo
+            debug "exiting.."
 
             exit 2
         fi
@@ -83,12 +79,12 @@ function usage
 function parse_cmdline
 {
     if [ `uname` == "Darwin" ]; then
-	args=`getopt hs:A:p: $@`;
+	args=`getopt hds:A:p: $@`;
     elif [ `uname` == "Linux" ]; then
-	args=`getopt -u -o hs:A:p: \
-            --long help,serial:,android-sdk:,pipe: -- "$@"`;
+	args=`getopt -u -o hds:A:p: \
+            --long help,debug,serial:,android-sdk:,pipe: -- "$@"`;
     else
-	echo "You need a GNU/Linux or Mac OS X to run $0";
+	error "You need a GNU/Linux or Mac OS X to run $0";
 	exit 0;
     fi
 
@@ -104,6 +100,9 @@ function parse_cmdline
             -h|--help)
                 usage;
                 exit 0;;
+            -d|--debug)
+                AGRAB_DEBUG="true";
+                shift;;
 	    -s|--serial)
 		device=$2;
 		shift;
@@ -113,7 +112,7 @@ function parse_cmdline
 
 		# check if ASDK_PATH actually contains android-sdk
 		if [ ! -x ${ASDK_PATH}/platform-tools/adb ]; then
-		    echo "$ASDK_PATH does not point to a valid android SDK";
+		    error "$ASDK_PATH does not point to a valid android SDK";
 		    exit 2;
 		fi
 

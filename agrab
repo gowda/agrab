@@ -18,9 +18,37 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
 # USA.
 
+#
+# logging helpers
+#
+function debug
+{
+    if [ "$AGRAB_DEBUG" == "true" ]; then
+        if [ -t 1 ]; then
+            echo "$0: $@";
+        else
+            echo "$0 [`date`] [DEBUG]: $@"
+        fi
+    fi
+}
+
+function error
+{
+    if [ -t 2 ]; then
+        echo 1>&2 "$0: $@"
+    else
+        echo 1>&2 "$0 [`date`] [ERROR]: $@"
+    fi
+}
+
+
 function run_tee
 {
     params="-p $pipe";
+
+    if [ ! -z "$AGRAB_DEBUG" ]; then
+        params="$params -d";
+    fi
 
     if [ ! -z "$device" ]; then
         params="$params -s $device";
@@ -31,8 +59,8 @@ function run_tee
     fi
 
     COMMAND=$(echo "./afrab-tee ${params}")
-    echo
-    echo "run-tee: ${COMMAND}"
+
+    debug "run-tee: ${COMMAND}"
 
     ${COMMAND}
 }
@@ -40,6 +68,10 @@ function run_tee
 function run_encoder
 {
     params="-i $pipe"
+
+    if [ ! -z "$AGRAB_DEBUG" ]; then
+        params="$params -d";
+    fi
 
     if [ -z "$output" ]; then
 	output="agrab-$device.mp4";
@@ -50,9 +82,7 @@ function run_encoder
             params="$params -s $device";
         fi
 
-        echo
-	echo "no output file specified, using default - $output"
-        echo
+	debug "no output file specified, using default - $output"
     fi
 
 
@@ -60,9 +90,7 @@ function run_encoder
 
     COMMAND="./afrab-enc $params"
 
-    echo
-    echo "run-encoder: ${COMMAND}"
-    echo
+    debug "run-encoder: ${COMMAND}"
 
     ${COMMAND}
 }
@@ -74,7 +102,7 @@ function killtree
     ppid="$1"
 
     for i in `ps -ef | awk '$3 == '$ppid' { print $2 }'`; do
-        echo "$0: killing $i"
+        debug "killing $i"
         kill -KILL $i
     done
 }
@@ -84,7 +112,7 @@ function main
     run_tee &
     TEE_PID=$!;
 
-    echo "afrab-tee is running with PID $TEE_PID"
+    debug "afrab-tee is running with PID $TEE_PID"
 
     sleep 2;
     run_encoder;
@@ -108,10 +136,10 @@ function usage
 function parse_cmdline
 {
     if [ `uname` == "Darwin" ]; then
-	args=`getopt ho:s:LA: $@`
+	args=`getopt hdo:s:LA: $@`
     elif [ `uname` == "Linux" ]; then
-	args=`getopt -u -o ho:s:LA: \
-	    --long help,output:,serial:,live,android-sdk: -- "$@"`;
+	args=`getopt -u -o hdo:s:LA: \
+	    --long help,debug,output:,serial:,live,android-sdk: -- "$@"`;
     else
 	echo "You need a GNU/Linux or Mac OS X to run $0";
 	exit 0;
@@ -129,9 +157,12 @@ function parse_cmdline
             -h|--help)
                 usage;
                 exit 0;;
+            -d|--debug)
+                AGRAB_DEBUG="true";
+                shift;;
 	    -s|--serial)
 		device="$2";
-                echo "serial device is $device";
+                debug "serial device is $device";
 		shift;
 		shift;;
 	    -o|--output)
@@ -146,7 +177,7 @@ function parse_cmdline
 
 		# check if ASDK_PATH actually contains android-sdk
 		if [ ! -x ${ASDK_PATH}/platform-tools/adb ]; then
-		    echo "$ASDK_PATH does not point to a valid android SDK";
+		    error "$ASDK_PATH does not point to a valid android SDK";
 		    exit 2;
 		fi
 
@@ -164,24 +195,24 @@ function init
     pipe=/tmp/agrab-$BASHPID-$device.pipe
 
     if [ -z "$device" ]; then
-        echo
-        echo "no device specified, assuming that adb has an established "
-        echo "connection with an emulator/device"
-        echo
+        error
+        error "no device specified, assuming that adb has an established "
+        error "connection with an emulator/device"
+        error
 
         pipe=/tmp/agrab-$BASHPID.pipe
     fi
 
-
-    echo
-    echo "we shall use $pipe as pipe"
-    echo
+    debug "we shall use $pipe as pipe"
 
     if [ -z "$ASDK_PATH" ]; then
         if [ -v $ANDROID_SDK_PATH ]; then
             ASDK_PATH=${ANDROID_SDK_PATH}
         fi
     fi
+
+    export -f debug
+    export -f error
 }
 
 parse_cmdline "$@" && init && main;
