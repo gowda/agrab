@@ -20,14 +20,20 @@
 
 function init
 {
-    pipe=/tmp/android-display-trans-port-$device.pipe
+    if [ -z "$input" ]; then
+        echo
+        echo "$0: no input file to read from"
+        echo
 
-    sleep 2;
+        usage
 
-    echo "$0: reading from device pipe - $pipe"
+        exit 2;
+    fi
 
-    if [[ ! -p $pipe ]]; then
-	echo "display transporter not running"
+    echo "$0: reading from input - $input"
+
+    if [[ ! -p $input ]]; then
+	echo "$0: input file is missing, check if afrab-tee is running"
 	exit 1;
     fi
 
@@ -37,16 +43,16 @@ function init
 function main
 {
     if [ -z "$LIVE" ]; then
-	ffmpeg -r 30 -vcodec rawvideo -f rawvideo \
-	    -pix_fmt rgb565 -s 480x800 -i $pipe \
+	ffmpeg -v 0 -r 30 -vcodec rawvideo -f rawvideo \
+	    -pix_fmt rgb565 -s 480x800 -i $input \
 	    -vcodec mpeg4 -re $output
     else
 	output="rtmp://localhost/live/android-$device"
 
 	echo "streaming live at - $output"
 
-	ffmpeg -r 30 -vcodec rawvideo -f rawvideo \
-	    -pix_fmt rgb565 -s 480x800 -i $pipe \
+	ffmpeg -v 0 -r 30 -vcodec rawvideo -f rawvideo \
+	    -pix_fmt rgb565 -s 480x800 -i $input \
 	    -vcodec mpeg4 -re $output
     fi
 }
@@ -64,9 +70,10 @@ function usage
 function parse_cmdline
 {
     if [ `uname` == "Darwin" ]; then
-	args=`getopt ho:s:L $@`;
+	args=`getopt ho:s:Li: $@`;
     elif [ `uname` == "Linux" ]; then
-	args=`getopt -u -o ho:s:L --long help,output:,serial:,live -- "$@"`;
+	args=`getopt -u -o ho:s:Li: \
+            --long help,output:,serial:,live,input: -- "$@"`;
     else
 	echo "You need a GNU/Linux or Mac OS X to run $0";
 	exit 0;
@@ -85,13 +92,17 @@ function parse_cmdline
                 usage;
                 exit 0;;
 	    -s|--serial)
-		device=$2;
+		device="$2";
 		shift;
 		shift;;
 	    -o|--output)
-		output=$2;
+		output="$2";
 		shift;
 		shift;;
+            -i|--input)
+                input="$2";
+                shift;
+                shift;;
 	    -L|--live)
 		LIVE="-L";
 		echo "streaming live through rtmp";

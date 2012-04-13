@@ -20,29 +20,64 @@
 
 function run_tee
 {
-    if [ -z "$device" ]; then
-	echo "please specify a android device to attach to";
-	exit;
+    params="-p $pipe";
+
+    if [ ! -z "$device" ]; then
+        params="$params -s $device";
     fi
 
-    echo "starting android frame-buffer tee for $device";
-    ./afrab-tee -A ${ASDK_PATH} -s $device;
+    if [ ! -z "$ASDK_PATH" ]; then
+        params="$params -A $ASDK_PATH";
+    fi
+
+    COMMAND=$(echo "./afrab-tee ${params}")
+    echo
+    echo "run-tee: ${COMMAND}"
+
+    ${COMMAND}
 }
 
 function run_encoder
 {
+    params="-i $pipe"
+
     if [ -z "$output" ]; then
 	output="agrab-$device.mp4";
+
+        if [ -z "$device" ]; then
+            output="agrab.mp4";
+        else
+            params="$params -s $device";
+        fi
+
+        echo
 	echo "no output file specified, using default - $output"
+        echo
     fi
 
-    ./afrab-enc -o $output -s $device $LIVE;
+
+    params="$params -o $output";
+
+    COMMAND="./afrab-enc $params"
+
+    echo
+    echo "run-encoder: ${COMMAND}"
+    echo
+
+    ${COMMAND}
 }
 
 function main
 {
     run_tee &
+    TEE_PID=$!;
+
+    echo "afrab-tee is running with PID $TEE_PID"
+
+    sleep 2;
     run_encoder;
+
+    kill -KILL $TEE_PID;
 }
 
 function usage
@@ -86,7 +121,7 @@ function parse_cmdline
 		shift;
 		shift;;
 	    -o|--output)
-		output=$2;
+		output="$2";
 		shift;
 		shift;;
 	    -L|--live)
@@ -110,4 +145,29 @@ function parse_cmdline
     done
 }
 
-parse_cmdline "$@" && main;
+function init
+{
+    pipe=/tmp/agrab-$BASHPID-$device.pipe
+
+    if [ -z "$device" ]; then
+        echo
+        echo "no device specified, assuming that adb has an established "
+        echo "connection with an emulator/device"
+        echo
+
+        pipe=/tmp/agrab-$BASHPID.pipe
+    fi
+
+
+    echo
+    echo "we shall use $pipe as pipe"
+    echo
+
+    if [ -z "$ASDK_PATH" ]; then
+        if [ -v $ANDROID_SDK_PATH ]; then
+            ASDK_PATH=${ANDROID_SDK_PATH}
+        fi
+    fi
+}
+
+parse_cmdline "$@" && init && main;

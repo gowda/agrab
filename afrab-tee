@@ -26,7 +26,16 @@
 
 function init
 {
-    pipe=/tmp/android-display-trans-port-$device.pipe
+
+    if [ -z "$pipe" ]; then
+        echo
+        echo "$0: output file (FIFO) not specified, $0 refuses to continue"
+        echo
+
+        usage
+
+        exit 2;
+    fi
 
     if [ -z "${ASDK_PATH}" ]; then
         ADB="adb"
@@ -34,7 +43,7 @@ function init
         ADB=${ASDK_PATH}/platform-tools/adb
     fi
 
-    trap "rm -f $pipe" EXIT
+    trap "rm -f $pipe; exit" EXIT SIGINT SIGTERM SIGKILL
 
     if [[ ! -p $pipe ]]; then
 	mkfifo $pipe
@@ -56,14 +65,16 @@ function usage
     echo "Options:"
     echo " -s, --serial=SERIAL-OF-ANDROID      serial identifier for emulator"
     echo " -A, --android-sdk=ANDROID-SDK-PATH  android sdk to use"
+    echo " -p, --pipe=PIPE                     use PIPE as pipe to write frames"
 }
 
 function parse_cmdline
 {
     if [ `uname` == "Darwin" ]; then
-	args=`getopt hs:A: $@`;
+	args=`getopt hs:A:p: $@`;
     elif [ `uname` == "Linux" ]; then
-	args=`getopt -u -o hs:A: --long help,serial:,android-sdk: -- "$@"`;
+	args=`getopt -u -o hs:A:p: \
+            --long help,serial:,android-sdk:,pipe: -- "$@"`;
     else
 	echo "You need a GNU/Linux or Mac OS X to run $0";
 	exit 0;
@@ -94,6 +105,10 @@ function parse_cmdline
 		    exit 2;
 		fi
 
+                shift;
+                shift;;
+            -p|--pipe)
+                pipe="$2";
                 shift;
                 shift;;
 	    --)
