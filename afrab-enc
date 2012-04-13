@@ -45,7 +45,7 @@ function main
     if [ -z "$LIVE" ]; then
 	ffmpeg -v 0 -r 30 -vcodec rawvideo -f rawvideo \
 	    -pix_fmt rgb565 -s 480x800 -i $input \
-	    -vcodec mpeg4 -re $output
+	    -vcodec mpeg4 -re $output >/dev/null 2>&1
     else
 	output="rtmp://localhost/live/android-$device"
 
@@ -53,7 +53,7 @@ function main
 
 	ffmpeg -v 0 -r 30 -vcodec rawvideo -f rawvideo \
 	    -pix_fmt rgb565 -s 480x800 -i $input \
-	    -vcodec mpeg4 -re $output
+	    -vcodec mpeg4 -re $output >/dev/null 2>&1
     fi
 }
 
