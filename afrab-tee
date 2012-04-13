@@ -37,13 +37,17 @@ function init
         exit 2;
     fi
 
+    lockfile="/var/lock/"$(basename $pipe '.pipe');
+
+    lockfile-create ${lockfile};
+
     if [ -z "${ASDK_PATH}" ]; then
         ADB="adb"
     else
         ADB=${ASDK_PATH}/platform-tools/adb
     fi
 
-    trap "rm -f $pipe; exit" EXIT SIGINT SIGTERM SIGKILL
+    trap "rm -f $pipe; lockfile-remove $lockfile; exit" EXIT SIGINT SIGTERM SIGKILL
 
     if [[ ! -p $pipe ]]; then
 	mkfifo $pipe
@@ -54,7 +58,15 @@ function main
 {
     while true; do
 	${ADB} -s $device pull /dev/graphics/fb0 /dev/stdout \
-	    1>>$pipe 2>/dev/null
+	    1>>$pipe
+
+        if [ $? != 0 ]; then
+            echo
+            echo "$0: exiting.."
+            echo
+
+            exit 2
+        fi
     done
 }
 
